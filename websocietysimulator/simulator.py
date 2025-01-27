@@ -13,7 +13,7 @@ from .tasks.recommendation_task import RecommendationTask
 logger = logging.getLogger("websocietysimulator")
 
 class Simulator:
-    def __init__(self, data_dir: str = None, device: str = "auto", cache: bool = False):
+    def __init__(self, data_dir: str = None, block_set_dir: str = None, device: str = "auto", cache: bool = False):
         """
         Initialize the Simulator.
         Args:
@@ -23,15 +23,16 @@ class Simulator:
         """
         logger.info("Start initializing Simulator")
         self.data_dir = data_dir
+        self.block_set_dir = block_set_dir
         if data_dir is None:
             self.interaction_tool = None
         else:
             if cache:
                 logger.info("Using CacheInteractionTool")
-                self.interaction_tool = CacheInteractionTool(data_dir)
+                self.interaction_tool = CacheInteractionTool(data_dir, block_set_dir)
             else:
                 logger.info("Using Normal InteractionTool")
-                self.interaction_tool = InteractionTool(data_dir)
+                self.interaction_tool = InteractionTool(data_dir, block_set_dir)
         
         self.tasks = []  # List to store tasks
         self.groundtruth_data = []  # List to store groundtruth data
