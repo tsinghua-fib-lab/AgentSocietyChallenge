@@ -8,7 +8,7 @@ from tqdm import tqdm
 logger = logging.getLogger("websocietysimulator")
 
 class CacheInteractionTool:
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, block_set_dir: Optional[str] = None):
         """
         Initialize the tool with the dataset directory.
         Args:
@@ -16,6 +16,7 @@ class CacheInteractionTool:
         """
         logger.info(f"Initializing InteractionTool with data directory: {data_dir}")
         self.data_dir = data_dir
+        self.block_set_dir = block_set_dir
 
         # Create LMDB environments
         self.env_dir = os.path.join(data_dir, "lmdb_cache")
@@ -25,8 +26,45 @@ class CacheInteractionTool:
         self.item_env = lmdb.open(os.path.join(self.env_dir, "items"), map_size=2 * 1024 * 1024 * 1024)
         self.review_env = lmdb.open(os.path.join(self.env_dir, "reviews"), map_size=8 * 1024 * 1024 * 1024)
 
-        # Initialize the database if empty
-        self._initialize_db()
+        # Load ground truth data if available
+        self.block_set_items = []
+        self.block_set_pairs = set()  # 新增：用于存储(user_id, item_id)对
+        if self.block_set_dir:
+            logger.info(f"Loading block set data from {self.block_set_dir}")
+            self.block_set_items = self._load_block_set()
+            # 将block set数据转换为(user_id, item_id)对的集合
+            self.block_set_pairs = {(item['user_id'], item['item_id']) for item in self.block_set_items}
+
+        filtered_reviews = []
+        for review in self.review_env:
+            if (review['user_id'], review['item_id']) not in self.block_set_pairs:
+                filtered_reviews.append(review)
+        
+        logger.info(f"Filtered out {len(self.review_env) - len(filtered_reviews)} reviews based on block set")
+        self.review_env = filtered_reviews
+
+    def _load_block_set(self) -> List[str]:
+        """Load all block set files from the block set directory."""
+        block_set_data = []
+        task_dir = os.path.join(self.block_set_dir, 'task')
+        groundtruth_dir = os.path.join(self.block_set_dir, 'groundtruth')
+        
+        for filename in os.listdir(task_dir):
+            if filename.startswith('task_') and filename.endswith('.json'):
+                task_file_path = os.path.join(task_dir, filename)
+                with open(task_file_path, 'r', encoding='utf-8') as task_file:
+                    task_data = json.load(task_file)
+                    if task_data["type"] == "user_behavior_simulation":
+                        block_set_data.append({'user_id': task_data['user_id'], 'item_id': task_data['item_id']})
+                    else:
+                        groundtruth_filename = filename.replace('task_', 'groundtruth_')
+                        groundtruth_file_path = os.path.join(groundtruth_dir, groundtruth_filename)
+                        with open(groundtruth_file_path, 'r', encoding='utf-8') as groundtruth_file:
+                            groundtruth_data = json.load(groundtruth_file)
+                            for item in task_data['candidate_list']:
+                                if item == groundtruth_data['ground truth']:
+                                    block_set_data.append({'user_id': task_data['user_id'], 'item_id': item})
+        return block_set_data
 
     def _initialize_db(self):
         """Initialize the LMDB databases with data if they are empty."""

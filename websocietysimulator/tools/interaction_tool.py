@@ -64,16 +64,24 @@ class InteractionTool:
     def _load_block_set(self) -> List[str]:
         """Load all block set files from the block set directory."""
         block_set_data = []
-        for filename in os.listdir(self.block_set_dir):
-            if filename.startswith('groundtruth_') and filename.endswith('.json'):
-                file_path = os.path.join(self.block_set_dir, filename)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    data = json.load(file)
-                    if data["type"] == "user_behavior_simulation":
-                        block_set_data.append({'user_id': data['user_id'], 'item_id': data['item_id']})
+        task_dir = os.path.join(self.block_set_dir, 'tasks')
+        groundtruth_dir = os.path.join(self.block_set_dir, 'groundtruth')
+        
+        for filename in os.listdir(task_dir):
+            if filename.startswith('task_') and filename.endswith('.json'):
+                task_file_path = os.path.join(task_dir, filename)
+                with open(task_file_path, 'r', encoding='utf-8') as task_file:
+                    task_data = json.load(task_file)
+                    if task_data["type"] == "user_behavior_simulation":
+                        block_set_data.append({'user_id': task_data['user_id'], 'item_id': task_data['item_id']})
                     else:
-                        for item in data['candidate_list']:
-                            block_set_data.append({'user_id': data['user_id'], 'item_id': item})
+                        groundtruth_filename = filename.replace('task_', 'groundtruth_')
+                        groundtruth_file_path = os.path.join(groundtruth_dir, groundtruth_filename)
+                        with open(groundtruth_file_path, 'r', encoding='utf-8') as groundtruth_file:
+                            groundtruth_data = json.load(groundtruth_file)
+                            for item in task_data['candidate_list']:
+                                if item == groundtruth_data['ground truth']:
+                                    block_set_data.append({'user_id': task_data['user_id'], 'item_id': item})
         return block_set_data
 
     def get_user(self, user_id: str) -> Optional[Dict]:
