@@ -10,15 +10,16 @@ logger = logging.getLogger("websocietysimulator")
 class CacheInteractionTool:
     def __init__(self, data_dir: str, block_set_dir: Optional[str] = None):
         """
-        Initialize the tool with the dataset directory.
+        Initialize the CacheInteractionTool with the specified dataset directory.
         Args:
-            data_dir: Path to the directory containing Yelp dataset files.
+            data_dir: Path to the directory containing dataset files.
+            block_set_dir: Optional path to the directory containing block set files.
         """
-        logger.info(f"Initializing InteractionTool with data directory: {data_dir}")
+        logger.info(f"Initializing CacheInteractionTool with data directory: {data_dir}")
         self.data_dir = data_dir
         self.block_set_dir = block_set_dir
 
-        # Create LMDB environments
+        # Set up LMDB environments for caching
         self.env_dir = os.path.join(data_dir, "lmdb_cache")
         os.makedirs(self.env_dir, exist_ok=True)
 
@@ -26,27 +27,32 @@ class CacheInteractionTool:
         self.item_env = lmdb.open(os.path.join(self.env_dir, "items"), map_size=2 * 1024 * 1024 * 1024)
         self.review_env = lmdb.open(os.path.join(self.env_dir, "reviews"), map_size=8 * 1024 * 1024 * 1024)
 
-        # Load ground truth data if available
+        # Load block set data if provided
         self.block_set_items = []
-        self.block_set_pairs = set()  # 新增：用于存储(user_id, item_id)对
+        self.block_set_pairs = set()  # Store (user_id, item_id) pairs
         if self.block_set_dir:
             logger.info(f"Loading block set data from {self.block_set_dir}")
             self.block_set_items = self._load_block_set()
-            # 将block set数据转换为(user_id, item_id)对的集合
             self.block_set_pairs = {(item['user_id'], item['item_id']) for item in self.block_set_items}
 
+        # Filter reviews based on block set
         filtered_reviews = []
-        for review in self.review_env:
-            if (review['user_id'], review['item_id']) not in self.block_set_pairs:
-                filtered_reviews.append(review)
+        with self.review_env.begin() as txn:
+            cursor = txn.cursor()
+            for key, value in cursor:
+                review = json.loads(value)
+                if (review['user_id'], review['item_id']) not in self.block_set_pairs:
+                    filtered_reviews.append(review)
         
-        logger.info(f"Filtered out {len(self.review_env) - len(filtered_reviews)} reviews based on block set")
+        logger.info(f"Filtered out {txn.stat()['entries'] - len(filtered_reviews)} reviews based on block set")
         self.review_env = filtered_reviews
 
-    def _load_block_set(self) -> List[str]:
-        """Load all block set files from the block set directory."""
+        self._initialize_db()
+
+    def _load_block_set(self) -> List[Dict[str, str]]:
+        """Load block set files and return a list of user-item pairs."""
         block_set_data = []
-        task_dir = os.path.join(self.block_set_dir, 'task')
+        task_dir = os.path.join(self.block_set_dir, 'tasks')
         groundtruth_dir = os.path.join(self.block_set_dir, 'groundtruth')
         
         for filename in os.listdir(task_dir):
