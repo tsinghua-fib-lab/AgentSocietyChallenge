@@ -61,7 +61,7 @@ class InteractionTool:
         with open(file_path, 'r', encoding='utf-8') as file:
             return [json.loads(line) for line in file]
         
-    def _load_block_set(self) -> List[str]:
+    def _load_block_set(self) -> List[dict]:
         """Load all block set files from the block set directory."""
         block_set_data = []
         task_dir = os.path.join(self.block_set_dir, 'tasks')
