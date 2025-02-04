@@ -435,6 +435,8 @@
                             <th>⏰ Submission Time</th>
                             <th>⭐ Preference Estimation</th>
                             <th>📝 Review Generation</th>
+                            <th>📊 Sim Quality</th>
+                            <th>📊 Real Quality</th>
                             <th>📊 Overall Quality</th>
                         </tr>
                     </thead>
@@ -452,6 +454,8 @@
                             <th>🎯 Top-1 Hit Rate</th>
                             <th>🎯 Top-3 Hit Rate</th>
                             <th>🎯 Top-5 Hit Rate</th>
+                            <th>🏆 Sim Hit Rate</th>
+                            <th>🏆 Real Hit Rate</th>
                             <th>🏆 Avg Hit Rate</th>
                         </tr>
                     </thead>
@@ -467,7 +471,7 @@
     <script>
         $(document).ready(function() {
             let showOnlyBest = false;
-            let isFinalPhase = false;
+            let isFinalPhase = true;
             
             // 获取当前阶段的文件路径
             function getDataPath(track) {
@@ -519,6 +523,8 @@
                     { data: 'Submission Time', className: 'submission-time' },
                     { data: 'Preference Estimation', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Review Generation', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Sim Overall Quality', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Real Overall Quality', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Overall Quality', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } }
                 ],
                 order: [[4, 'desc']],
@@ -554,6 +560,8 @@
                     { data: 'Top-1 hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Top-3 hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Top-5 hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Sim Overall hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Real Overall hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Overall hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } }
                 ],
                 order: [[5, 'desc']],
