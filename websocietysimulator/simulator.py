@@ -56,11 +56,17 @@ class Simulator:
         """
         self.tasks = []  # Clear previous tasks
         self.groundtruth_data = []
+        self.sim_number = 0
+        self.real_number = 0
 
         # 获取所有task文件并按index排序
         task_files = sorted([f for f in os.listdir(task_dir) if f.startswith('task_') and f.endswith('.json')], 
                           key=lambda x: int(x.split('_')[1].split('.')[0]))
 
+        sim_tasks = []
+        real_tasks = []
+        sim_groundtruth = []
+        real_groundtruth = []
         for task_file in task_files:
             # 获取对应的groundtruth文件
             task_index = task_file.split('_')[1].split('.')[0]
@@ -73,9 +79,11 @@ class Simulator:
 
             # 读取task文件
             task_path = os.path.join(task_dir, task_file)
+            task_sim_real = None
             with open(task_path, 'r') as f:
                 task_data = json.load(f)
                 task_type = task_data.get('type')
+                task_sim_real = task_data.get('data type')
 
                 # Determine scenario type and create corresponding object
                 if task_type == 'user_behavior_simulation':
@@ -95,11 +103,21 @@ class Simulator:
 
             with open(groundtruth_path, 'r') as f:
                 groundtruth_data = json.load(f)
-                
-            self.tasks.append(task)
-            self.groundtruth_data.append(groundtruth_data)
+            
+            if task_sim_real == 'sim':
+                self.sim_number += 1
+                sim_tasks.append(task)
+                sim_groundtruth.append(groundtruth_data)
+            else:
+                self.real_number += 1
+                real_tasks.append(task)
+                real_groundtruth.append(groundtruth_data)
 
-        logger.info(f"Loaded {len(self.tasks)} task-groundtruth pairs")
+        logger.info(f"Loaded {self.sim_number} simulation tasks and {self.real_number} real tasks")
+        self.tasks = sim_tasks + real_tasks
+        self.groundtruth_data = sim_groundtruth + real_groundtruth
+
+        logger.info(f"Totally {len(self.tasks)} task-groundtruth pairs")
 
     def set_agent(self, agent_class: Type):
         """
@@ -331,6 +349,7 @@ class Simulator:
         metrics = self.recommendation_evaluator.calculate_hr_at_n(
             ground_truth=gt_pois,
             predictions=pred_pois,
+            number_sim=self.sim_number
         )
 
         return {
@@ -353,7 +372,8 @@ class Simulator:
                 })
         metrics = self.simulation_evaluator.calculate_metrics(
             simulated_data=simulated_data,
-            real_data=ground_truth_data
+            real_data=ground_truth_data,
+            number_sim=self.sim_number
         )
         return {
             'type': 'simulation',
