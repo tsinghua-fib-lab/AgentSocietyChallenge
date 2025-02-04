@@ -366,6 +366,35 @@
         .leaderboard-content.hidden {
             display: none;
         }
+
+        /* 最高分切换按钮样式 */
+        .toggle-best {
+            margin: 20px 0 !important;
+            background: #e9ecef !important;
+            border: 1px solid #dee2e6 !important;
+            padding: 8px 16px !important;
+            display: block !important;
+        }
+
+        .toggle-best.active {
+            background: linear-gradient(45deg, #28a745, #20c997) !important;
+            border-color: transparent !important;
+            color: white !important;
+        }
+
+        /* 阶段切换按钮样式 */
+        .toggle-phase {
+            margin-left: auto !important;  /* 将按钮推到右侧 */
+            background: linear-gradient(45deg, #dc3545, #fd7e14) !important;
+            color: white !important;
+            border: 1px solid #6c757d !important;
+            padding: 8px 16px !important;
+        }
+
+        .toggle-phase.active {
+            background: linear-gradient(45deg, #3547e8, #14fd4e) !important;
+            border-color: transparent !important;
+        }
     </style>
 </head>
 <body>
@@ -390,6 +419,12 @@
             <div class="leaderboard-tabs">
                 <button class="tab-button active" data-tab="modeling">User Modeling Track</button>
                 <button class="tab-button" data-tab="recommendation">Recommendation Track</button>
+                <button class="tab-button toggle-best" id="toggleBestScore">
+                    <span class="toggle-text">Show Best Scores Only</span>
+                </button>
+                <button class="tab-button toggle-phase" id="togglePhase">
+                    <span class="toggle-text">Switch to Final Phase</span>
+                </button>
             </div>
 
             <!-- User Modeling Leaderboard -->
@@ -430,15 +465,55 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.11/jquery.csv.min.js"></script>
     <script>
         $(document).ready(function() {
+            let showOnlyBest = false;
+            let isFinalPhase = false;
+            
+            // 获取当前阶段的文件路径
+            function getDataPath(track) {
+                const phase = isFinalPhase ? 'final' : 'development';
+                return track === 'modeling' 
+                    ? `../assets/data/${phase}/behavior_leaderboard.csv`
+                    : `../assets/data/${phase}/recommendation_leaderboard.csv`;
+            }
+
+            // 处理数据以获取最高分记录
+            function getBestScores(data, scoreColumn) {
+                const teamScores = {};
+                data.forEach(row => {
+                    const teamName = row['Team name'];
+                    const score = parseFloat(row[scoreColumn]);
+                    
+                    if (!teamScores[teamName] || score > teamScores[teamName].score) {
+                        teamScores[teamName] = {
+                            score: score,
+                            row: row
+                        };
+                    }
+                });
+                
+                return Object.values(teamScores).map(item => item.row);
+            }
+
             // 初始化两个表格
             const modelingTable = $('#modeling-table').DataTable({
                 ajax: {
-                    url: '../assets/data/behavior_leaderboard.csv',
+                    url: getDataPath('modeling'),
                     dataType: 'text',
                     dataSrc: function(csvData) {
-                        return $.csv.toObjects(csvData);
+                        try {
+                            const data = $.csv.toObjects(csvData);
+                            if (!data || !data.length) {
+                                console.error('No data loaded or parsing error');
+                                return [];
+                            }
+                            return showOnlyBest ? getBestScores(data, 'Overall Quality') : data;
+                        } catch (error) {
+                            console.error('Error processing data:', error);
+                            return [];
+                        }
                     }
                 },
                 columns: [
@@ -450,15 +525,29 @@
                 ],
                 order: [[4, 'desc']],
                 pageLength: 10,
-                responsive: false
+                responsive: true,
+                processing: true,
+                language: {
+                    processing: "Loading data..."
+                }
             });
 
             const recommendationTable = $('#recommendation-table').DataTable({
                 ajax: {
-                    url: '../assets/data/recommendation_leaderboard.csv',
+                    url: getDataPath('recommendation'),
                     dataType: 'text',
                     dataSrc: function(csvData) {
-                        return $.csv.toObjects(csvData);
+                        try {
+                            const data = $.csv.toObjects(csvData);
+                            if (!data || !data.length) {
+                                console.error('No data loaded or parsing error');
+                                return [];
+                            }
+                            return showOnlyBest ? getBestScores(data, 'Overall hr') : data;
+                        } catch (error) {
+                            console.error('Error processing data:', error);
+                            return [];
+                        }
                     }
                 },
                 columns: [
@@ -471,15 +560,45 @@
                 ],
                 order: [[5, 'desc']],
                 pageLength: 10,
-                responsive: false
+                responsive: true,
+                processing: true,
+                language: {
+                    processing: "Loading data..."
+                }
+            });
+
+            // 添加最高分切换功能
+            $('#toggleBestScore').click(function() {
+                $(this).toggleClass('active');
+                showOnlyBest = !showOnlyBest;
+                $(this).find('.toggle-text').text(
+                    showOnlyBest ? 'Show All Submissions' : 'Show Best Scores Only'
+                );
+                
+                // 重新加载两个表格的数据
+                modelingTable.ajax.reload();
+                recommendationTable.ajax.reload();
+            });
+
+            // 添加阶段切换功能
+            $('#togglePhase').click(function() {
+                $(this).toggleClass('active');
+                isFinalPhase = !isFinalPhase;
+                $(this).find('.toggle-text').text(
+                    isFinalPhase ? 'Switch to Development Phase' : 'Switch to Final Phase'
+                );
+                
+                // 更新表格的数据源并重新加载
+                modelingTable.ajax.url(getDataPath('modeling')).load();
+                recommendationTable.ajax.url(getDataPath('recommendation')).load();
             });
 
             // 标签切换功能
-            $('.tab-button').click(function() {
+            $('.tab-button[data-tab]').click(function() {
                 const tabId = $(this).data('tab');
                 
                 // 更新按钮状态
-                $('.tab-button').removeClass('active');
+                $('.tab-button[data-tab]').removeClass('active');
                 $(this).addClass('active');
                 
                 // 更新内容显示
@@ -495,7 +614,6 @@
             });
         });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.11/jquery.csv.min.js"></script>
     <script>
         // 获取当前页面的文件名
         const currentPage = window.location.pathname.split('/').pop();
