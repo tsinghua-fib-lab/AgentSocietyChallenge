@@ -14,30 +14,28 @@ class InteractionTool:
             data_dir: Path to the directory containing Yelp dataset files.
         """
         logger.info(f"Initializing InteractionTool with data directory: {data_dir}")
-        self.data_dir = data_dir
-        self.block_set_dir = block_set_dir
         # Convert DataFrames to dictionaries for O(1) lookup
         logger.info(f"Loading item data from {os.path.join(data_dir, 'item.json')}")
-        self.item_data = {item['item_id']: item for item in self._load_data('item.json')}
+        self.item_data = {item['item_id']: item for item in self._load_data(data_dir, 'item.json')}
         logger.info(f"Loading user data from {os.path.join(data_dir, 'user.json')}")
-        self.user_data = {user['user_id']: user for user in self._load_data('user.json')}
+        self.user_data = {user['user_id']: user for user in self._load_data(data_dir, 'user.json')}
         
         # Create review indices
         logger.info(f"Loading review data from {os.path.join(data_dir, 'review.json')}")
-        reviews = self._load_data('review.json')
+        reviews = self._load_data(data_dir, 'review.json')
         # Load ground truth data if available
-        self.block_set_items = []
-        self.block_set_pairs = set()  # 新增：用于存储(user_id, item_id)对
-        if self.block_set_dir:
-            logger.info(f"Loading block set data from {self.block_set_dir}")
-            self.block_set_items = self._load_block_set()
+        block_set_items = []
+        block_set_pairs = set()  # 新增：用于存储(user_id, item_id)对
+        if block_set_dir:
+            logger.info(f"Loading block set data from {block_set_dir}")
+            block_set_items = self._load_block_set(block_set_dir)
             # 将block set数据转换为(user_id, item_id)对的集合
-            self.block_set_pairs = {(item['user_id'], item['item_id']) for item in self.block_set_items}
+            block_set_pairs = {(item['user_id'], item['item_id']) for item in block_set_items}
         
         # 过滤review数据，移除block set中的评论
         filtered_reviews = []
         for review in reviews:
-            if (review['user_id'], review['item_id']) not in self.block_set_pairs:
+            if (review['user_id'], review['item_id']) not in block_set_pairs:
                 filtered_reviews.append(review)
         
         logger.info(f"Filtered out {len(reviews) - len(filtered_reviews)} reviews based on block set")
@@ -55,17 +53,17 @@ class InteractionTool:
             # Index by user_id
             self.user_reviews.setdefault(review['user_id'], []).append(review)
 
-    def _load_data(self, filename: str) -> List[Dict]:
+    def _load_data(self, data_dir: str, filename: str) -> List[Dict]:
         """Load data as a list of dictionaries."""
-        file_path = os.path.join(self.data_dir, filename)
+        file_path = os.path.join(data_dir, filename)
         with open(file_path, 'r', encoding='utf-8') as file:
             return [json.loads(line) for line in file]
         
-    def _load_block_set(self) -> List[dict]:
+    def _load_block_set(self, block_set_dir: str) -> List[dict]:
         """Load all block set files from the block set directory."""
         block_set_data = []
-        task_dir = os.path.join(self.block_set_dir, 'tasks')
-        groundtruth_dir = os.path.join(self.block_set_dir, 'groundtruth')
+        task_dir = os.path.join(block_set_dir, 'tasks')
+        groundtruth_dir = os.path.join(block_set_dir, 'groundtruth')
         
         for filename in os.listdir(task_dir):
             if filename.startswith('task_') and filename.endswith('.json'):
