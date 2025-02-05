@@ -435,9 +435,9 @@
                             <th>⏰ Submission Time</th>
                             <th>⭐ Preference Estimation</th>
                             <th>📝 Review Generation</th>
-                            <th>📊 Sim Quality</th>
-                            <th>📊 Real Quality</th>
-                            <th>📊 Overall Quality</th>
+                            <th>📊 Score@SIM</th>
+                            <th>📊 Score@REAL</th>
+                            <th>🏆 Overall Score</th>
                         </tr>
                     </thead>
                 </table>
@@ -454,9 +454,9 @@
                             <th>🎯 Top-1 Hit Rate</th>
                             <th>🎯 Top-3 Hit Rate</th>
                             <th>🎯 Top-5 Hit Rate</th>
-                            <th>🏆 Sim Hit Rate</th>
-                            <th>🏆 Real Hit Rate</th>
-                            <th>🏆 Avg Hit Rate</th>
+                            <th>📊 Score@SIM</th>
+                            <th>📊 Score@REAL</th>
+                            <th>🏆 Overall Score</th>
                         </tr>
                     </thead>
                 </table>
@@ -511,7 +511,7 @@
                                 console.error('No data loaded or parsing error');
                                 return [];
                             }
-                            return showOnlyBest ? getBestScores(data, 'Overall Quality') : data;
+                            return showOnlyBest ? getBestScores(data, 'Overall Score') : data;
                         } catch (error) {
                             console.error('Error processing data:', error);
                             return [];
@@ -523,11 +523,11 @@
                     { data: 'Submission Time', className: 'submission-time' },
                     { data: 'Preference Estimation', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Review Generation', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
-                    { data: 'Sim Overall Quality', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
-                    { data: 'Real Overall Quality', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
-                    { data: 'Overall Quality', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } }
+                    { data: 'Score@SIM', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Score@REAL', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Overall Score', className: 'error-value', render: function(data) { return parseFloat(data).toFixed(4); } }
                 ],
-                order: [[4, 'desc']],
+                order: [[6, 'desc']],
                 pageLength: 10,
                 responsive: true,
                 processing: true,
@@ -547,7 +547,7 @@
                                 console.error('No data loaded or parsing error');
                                 return [];
                             }
-                            return showOnlyBest ? getBestScores(data, 'Overall hr') : data;
+                            return showOnlyBest ? getBestScores(data, 'Overall Score') : data;
                         } catch (error) {
                             console.error('Error processing data:', error);
                             return [];
@@ -560,11 +560,11 @@
                     { data: 'Top-1 hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Top-3 hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
                     { data: 'Top-5 hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
-                    { data: 'Sim Overall hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
-                    { data: 'Real Overall hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
-                    { data: 'Overall hr', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } }
+                    { data: 'Score@SIM', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Score@REAL', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } },
+                    { data: 'Overall Score', className: 'hr-value', render: function(data) { return parseFloat(data).toFixed(4); } }
                 ],
-                order: [[5, 'desc']],
+                order: [[7, 'desc']],
                 pageLength: 10,
                 responsive: true,
                 processing: true,
