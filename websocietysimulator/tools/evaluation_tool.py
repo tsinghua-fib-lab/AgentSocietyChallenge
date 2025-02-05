@@ -163,6 +163,7 @@ class SimulationEvaluator(BaseEvaluator):
         star_error = 0
         sim_star_error = 0
         real_star_error = 0
+        index = 0
         for sim_star, real_star in zip(simulated_stars, real_stars):
             if sim_star > 5:
                 sim_star = 5
