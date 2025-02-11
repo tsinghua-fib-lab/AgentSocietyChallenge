@@ -6,6 +6,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 import logging
 logger = logging.getLogger("websocietysimulator")
 
+class RateLimitError(Exception):
+    pass
+
 class LLMBase:
     def __init__(self, model: str = "qwen2.5-72b-instruct"):
         """
@@ -58,7 +61,7 @@ class InfinigenceLLM(LLMBase):
         self.embedding_model = InfinigenceEmbeddings(api_key=api_key)
         
     @retry(
-        retry=retry_if_exception_type(Exception),
+        retry=retry_if_exception_type(RateLimitError),
         wait=wait_exponential(multiplier=1, min=10, max=300),  # 等待时间从10秒开始，指数增长，最长300秒
         stop=stop_after_attempt(10)  # 最多重试10次
     )
@@ -93,9 +96,10 @@ class InfinigenceLLM(LLMBase):
         except Exception as e:
             if "429" in str(e):
                 logger.warning("Rate limit exceeded")
+                raise RateLimitError("Rate limit exceeded") from e
             else:
-                logger.error(f"Other LLM Error: {e}")
-            raise e
+                logger.error(f"LLM Error: {e}")
+                raise e
     
     def get_embedding_model(self):
         return self.embedding_model
