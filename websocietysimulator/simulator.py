@@ -1,7 +1,7 @@
 import logging
 import os
 import json
-from typing import List, Type, Dict, Any, Union
+from typing import List, Type, Dict, Any, Union, Tuple
 from .tools import InteractionTool, CacheInteractionTool
 from .tools.evaluation_tool import RecommendationEvaluator, SimulationEvaluator
 from .agent.simulation_agent import SimulationAgent
@@ -239,13 +239,10 @@ class Simulator:
                             single_task_executor.shutdown(wait=False)
                             return index, None
                 except NotImplementedError:
-                    result = {
-                        "task": task.to_dict(),
-                        "error": "Forward method not implemented by participant."
-                    }
+                    return index, {"error": "Forward method not implemented by participant."}
                 except Exception as e:
                     logger.error(f"Task {index} failed with error: {str(e)}")
-                    return index, None
+                    return index, {"error": str(e)}
                 
                 with log_lock:
                     logger.info(f"Simulation finished for task {index}")
@@ -289,7 +286,7 @@ class Simulator:
         # 过滤掉None值（未完成的任务）
         return self.simulation_outputs
 
-    def evaluate(self) -> Dict[str, Any]:
+    def evaluate(self) -> Tuple[Dict[str, Any], List]:
         """
         Evaluate the simulation results using the loaded groundtruth data.
         Returns:
@@ -313,12 +310,13 @@ class Simulator:
             groundtruth_data = self.groundtruth_data
         
         evaluation_results = {}
+        error_log = []
         
         # 根据agent类型选择评估方法
         if issubclass(self.agent_class, RecommendationAgent):
-            evaluation_results = self._evaluate_recommendation(groundtruth_data)
+            evaluation_results, error_log = self._evaluate_recommendation(groundtruth_data)
         elif issubclass(self.agent_class, SimulationAgent):
-            evaluation_results = self._evaluate_simulation(groundtruth_data)
+            evaluation_results, error_log = self._evaluate_simulation(groundtruth_data)
         
         # 添加数据条目信息到评估结果中
         evaluation_results['data_info'] = {
@@ -329,18 +327,21 @@ class Simulator:
         
         self.evaluation_results.append(evaluation_results)
         logger.info("Evaluation finished")
-        return evaluation_results
+        return evaluation_results, error_log
 
     def _evaluate_recommendation(self, ground_truth_data: List[Dict]) -> Dict[str, Any]:
         """
         Evaluate recommendation results using groundtruth
         """
+        error_log = []
         # 从ground truth数据中提取真实POI
         gt_pois = [item['ground truth'] for item in ground_truth_data]
         
         pred_pois = []
         for output in self.simulation_outputs:
-            if output is not None:
+            if output is not None and "error" in output:
+                error_log.append(output["error"])
+            elif output is not None:
                 pred_pois.append(output['output'])
             else:
                 pred_pois.append([''])
@@ -355,15 +356,18 @@ class Simulator:
         return {
             'type': 'recommendation',
             'metrics': metrics.__dict__,
-        }
+        }, error_log
 
     def _evaluate_simulation(self, ground_truth_data: List[Dict]) -> Dict[str, Any]:
         """
         Evaluate simulation results
         """
+        error_log = []
         simulated_data = []
         for output in self.simulation_outputs:
-            if output is not None:
+            if output is not None and "error" in output:
+                error_log.append(output["error"])
+            elif output is not None:
                 simulated_data.append(output['output'])
             else:
                 simulated_data.append({
@@ -378,7 +382,7 @@ class Simulator:
         return {
             'type': 'simulation',
             'metrics': metrics.__dict__,
-        }
+        }, error_log
 
     def get_evaluation_history(self) -> List[Dict[str, Any]]:
         """
