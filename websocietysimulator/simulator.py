@@ -237,12 +237,12 @@ class Simulator:
                             # 强制关闭执行器
                             single_task_executor._threads.clear()
                             single_task_executor.shutdown(wait=False)
-                            return index, None
+                            return index, {"error": f"Task {index} timed out (300s)"}
                 except NotImplementedError:
                     return index, {"error": "Forward method not implemented by participant."}
                 except Exception as e:
                     logger.error(f"Task {index} failed with error: {str(e)}")
-                    return index, {"error": str(e)}
+                    return index, {"error": f"Task {index} end with error: {str(e)}"}
                 
                 with log_lock:
                     logger.info(f"Simulation finished for task {index}")
@@ -341,6 +341,7 @@ class Simulator:
         for output in self.simulation_outputs:
             if output is not None and "error" in output:
                 error_log.append(output["error"])
+                pred_pois.append([''])
             elif output is not None:
                 pred_pois.append(output['output'])
             else:
@@ -367,6 +368,10 @@ class Simulator:
         for output in self.simulation_outputs:
             if output is not None and "error" in output:
                 error_log.append(output["error"])
+                simulated_data.append({
+                    'stars': 0,
+                    'review': ''
+                })
             elif output is not None:
                 simulated_data.append(output['output'])
             else:
