@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winners Announcement - WWW'25 AgentSociety Challenge</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        /* 新增页面背景渐变 */
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        /* 优化容器布局 */
+        .winner-container {
+            display: flex;
+            gap: 3rem;
+            padding: 2rem 2rem;
+            max-width: 2000px;
+            margin: 0 auto;
+        }
+
+        /* 每个赛道板块 */
+        .track-winners {
+            flex: 1;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border: 0px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            min-width: 500px;
+        }
+
+        .track-winners:hover {
+            transform: translateY(-5px);
+        }
+
+        /* 优化标题样式 */
+        .track-winners h2 {
+            font-size: 2.2rem;
+            color: #e8f4fc;
+            margin-bottom: 2rem;
+            padding: 1.5rem 2rem;
+            border-radius: 8px;
+            text-align: center;
+            background: linear-gradient(
+                135deg,
+                #2c3e50 0%,
+                #3498db 50%,
+                #2c3e50 100%
+            );
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 增强奖牌视觉效果 */
+        .podium h3 {
+            font-size: 1.8rem;
+            color: #34495e;
+            margin-bottom: 1.8rem;
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .podium h3::before {
+            content: "🏆";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.8rem;
+        }
+
+        /* 优化排名条目 */
+        .winner-rank {
+            position: relative;
+            padding: 1.2rem 2rem;
+            margin: 1.4rem 0;
+            border-left: 4px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            overflow: visible;
+            z-index: 1;
+            border-radius: 12px;
+        }
+
+        /* 修正背景板样式 */
+        .winner-rank::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 215, 0, 0.1);
+            z-index: -1;
+            border-radius: 12px;
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.3),
+                inset 0 0 25px rgba(255, 255, 255, 0.2);
+            transform: perspective(100px) rotateX(2deg);
+            overflow: hidden;
+            animation: goldGlow 2.5s ease-in-out infinite;
+        }
+
+        /* 银牌背景 */
+        .winner-rank.silver::after {
+            background: rgba(192, 192, 192, 0.1);
+            box-shadow: 
+                0 0 20px rgba(192, 192, 192, 0.15), /* 银色泛光 */
+                inset 0 0 15px rgba(255, 255, 255, 0.1);
+            animation: silverGlow 2.5s ease-in-out infinite;
+        }
+
+        /* 铜牌背景 */
+        .winner-rank.bronze::after {
+            background: rgba(205, 127, 50, 0.1);
+            box-shadow: 
+                0 0 20px rgba(205, 127, 50, 0.15), /* 铜色泛光 */
+                inset 0 0 15px rgba(255, 255, 255, 0.1);
+            animation: bronzeGlow 2.5s ease-in-out infinite;
+        }
+
+        /* 新增紧凑网格布局 */
+        .finalist-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            padding: 1rem 0;
+        }
+
+        .team-tag {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            font-size: 1.4rem;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #2c3e50;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        /* 移除最后一个元素的右边距 */
+        .team-tag:last-child {
+            margin-right: 0;
+        }
+
+        .team-tag:hover {
+            background: rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 移除原有列表样式 */
+        .finalists ul {
+            display: none;
+        }
+
+        /* 调整标题对齐 */
+        .finalists h3 {
+            font-size: 1.6rem;
+            padding-left: 0;
+            text-align: center;
+        }
+
+        .finalists h3::before {
+            content: none;
+        }
+
+        .note {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        @keyframes medalSpin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        /* 增强响应式设计 */
+        @media (max-width: 768px) {
+            .winner-container {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .track-winners {
+                padding: 2rem;
+                min-width: auto;
+            }
+            
+            .track-winners h2 {
+                font-size: 2rem;
+                padding: 1rem 1.5rem;
+            }
+            
+            .winner-rank {
+                font-size: 1.4rem;
+                font-weight: bold;
+            }
+            
+            .team-tag {
+                font-size: 1rem;
+                padding: 0.5rem 1rem;
+            }
+            
+            .finalist-grid {
+                gap: 0.6rem;
+                justify-content: center;
+            }
+        }
+
+        /* User Modeling Track 颜色方案 */
+        .track-winners:nth-child(1) h2 {
+            background: linear-gradient(
+                135deg,
+                #2C5F2D 0%,  /* 深红 */
+                #6f9736 50%,  /* 浅粉 */
+                #2C5F2D 100%
+            );
+            border-color: rgba(204, 49, 61, 0.3);
+        }
+
+        /* Recommendation Track 颜色方案 */
+        .track-winners:nth-child(2) h2 {
+            background: linear-gradient(
+                135deg,
+                #2A579A 0%,  /* 深蓝 */
+                #327aa3 50%,  /* 浅蓝 */
+                #2A579A 100%
+            );
+            border-color: rgba(42, 87, 154, 0.3);
+        }
+
+        /* 增强光流动动画 */
+        @keyframes goldGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 40px rgba(255, 215, 0, 0.5),  /* 加深金色透明度 */
+                    inset 0 0 30px rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 60px rgba(255, 215, 0, 0.7),  /* 增大扩散范围 */
+                    inset 0 0 45px rgba(255, 255, 255, 0.5); 
+            }
+        }
+
+        @keyframes silverGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 30px rgba(192, 192, 192, 0.4),  /* 加强银色浓度 */
+                    inset 0 0 20px rgba(255, 255, 255, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 45px rgba(192, 192, 192, 0.6),
+                    inset 0 0 35px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        @keyframes bronzeGlow {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 30px rgba(205, 127, 50, 0.4),  /* 加深铜色强度 */
+                    inset 0 0 20px rgba(255, 255, 255, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 45px rgba(205, 127, 50, 0.6),
+                    inset 0 0 35px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        .podium {
+            margin-bottom: 3rem;
+        }
+
+        /* 添加分界线 */
+        .finalists::before {
+            content: "";
+            display: block;
+            width: 80%;
+            margin: 2rem auto;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <img src="../assets/images/ASC.jpg" alt="Logo">
+            <h1>AgentSociety Challenge @ WWW 2025</h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="overview.html">Overview</a></li>
+            <li><a href="winners.html">Winners</a></li>
+            <li><a href="modeling-track.html">User Modeling Track</a></li>
+            <li><a href="recommendation-track.html">Recommendation Track</a></li>
+            <li><a href="leaderboards.html">Dev Leaderboards</a></li>
+            <li><a href="final_leaderboards.html">Final Leaderboards</a></li>
+            <li><a href="submission-guidelines.html">Submission Guidelines</a></li>
+            <li><a href="discussion.html">Discussion Forum</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="winner-container">
+            <!-- User Modeling Track -->
+            <div class="track-winners">
+                <h2>User Modeling Track Winners</h2>
+                <div class="podium">
+                    <h3>Top Teams</h3>
+                    <div class="winner-rank gold">🏅 1st place: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ASC</div>
+                    <div class="winner-rank silver">🥈 2nd place: &nbsp;&nbsp;JiuWen</div>
+                    <div class="winner-rank bronze">🥉 3rd place: 伸腿瞪眼丸</div>
+                </div>
+
+                <div class="finalists">
+                    <h3>Finalists</h3>
+                    <div class="finalist-grid">
+                        <span class="team-tag">Agent42</span>
+                        <span class="team-tag">AwesomeAgent</span>
+                        <span class="team-tag">CRUISE</span>
+                        <span class="team-tag">DummyAgent</span>
+                        <span class="team-tag">FollowSen</span>
+                        <span class="team-tag">Santiago</span>
+                        <span class="team-tag">SDU-AI</span>
+                        <span class="team-tag">ustc-agent</span>
+                        <span class="team-tag">WiseAgents</span>
+                        <span class="team-tag">何解？和解！</span>
+                        <span class="team-tag">锐欣咖啡</span>
+                    </div>
+                    <p class="note">* Finalists listed in alphabetical order</p>
+                </div>
+            </div>
+
+            <!-- Recommendation Track -->
+            <div class="track-winners">
+                <h2>Recommendation Track Winners</h2>
+                <div class="podium">
+                    <h3>Top Teams</h3>
+                    <div class="winner-rank gold">🏅 1st place: &nbsp;baseline666</div>
+                    <div class="winner-rank silver">🥈 2nd place: RecHackers</div>
+                    <div class="winner-rank bronze">🥉 3rd place: DummyAgent</div>
+                </div>
+
+                <div class="finalists">
+                    <h3>Finalists</h3>
+                    <div class="finalist-grid">
+                        <span class="team-tag">100%Hit</span>
+                        <span class="team-tag">BrainNotFound404</span>
+                        <span class="team-tag">cigit-shi</span>
+                        <span class="team-tag">FollowSen</span>
+                        <span class="team-tag">GPU is all your need</span>
+                        <span class="team-tag">Open-ZI</span>
+                        <span class="team-tag">pp</span>
+                        <span class="team-tag">SSSmith</span>
+                        <span class="team-tag">tsdxgxxb</span>
+                        <span class="team-tag">UniqueData</span>
+                        <span class="team-tag">ycwfs666</span>
+                        <span class="team-tag">yoyo_agent</span>
+                        <span class="team-tag">水水水</span>
+                        <span class="team-tag">谭湘文</span>
+                    </div>
+                    <p class="note">* Finalists listed in alphabetical order</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 获取当前页面的文件名
+        const currentPage = window.location.pathname.split('/').pop();
+        
+        // 移除所有导航链接的active类
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.classList.remove('active');
+            link.removeAttribute('aria-current');
+        });
+        
+        // 为当前页面的导航链接添加active类
+        document.querySelector(`.nav-links a[href="${currentPage}"]`)?.classList.add('active');
+        document.querySelector(`.nav-links a[href="${currentPage}"]`)?.setAttribute('aria-current', 'page');
+    </script>
+</body>
+</html> 
