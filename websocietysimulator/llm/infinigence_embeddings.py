@@ -91,3 +91,39 @@ class QwenEmbeddings(Embeddings):
         """Embed a single query text into a vector"""
         embeddings = self.embed_documents([text])
         return embeddings
+    
+class FLowEmbeddings(Embeddings):
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "BAAI/bge-m3",
+        api_url: str = "https://api.siliconflow.cn/v1"
+    ):
+        self.api_key = api_key
+        self.model = model
+        self.api_url = api_url
+        self.client = OpenAI(api_key=api_key, base_url=api_url)
+        
+    @retry(
+        retry=retry_if_exception_type(Exception),
+        wait=wait_exponential(multiplier=1, min=10, max=60),  # 等待时间从10秒开始，指数增长，最长60秒
+        stop=stop_after_attempt(5)  # 最多重试5次
+    )
+    def embed_documents(self, text: str) -> List[float]:
+        """Embed a list of documents into vectors"""
+        try:
+            completion = self.client.embeddings.create(
+                model=self.model,
+                input=text,
+                dimensions=1024,
+                encoding_format="float"
+            )
+            return completion.data[0].embedding
+        except Exception as e:
+            logger.warning(f"InfinigenceEmbeddings API call failed: {e}")
+            raise e
+
+    def embed_query(self, text: str) -> List[float]:
+        """Embed a single query text into a vector"""
+        embeddings = self.embed_documents([text])
+        return embeddings
